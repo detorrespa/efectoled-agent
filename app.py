@@ -204,6 +204,12 @@ if caso_uso == "🔍 Análisis Causal":
                 category=category_param
             )
             
+            # Si el modelo no tiene datos para esa combinación, mostrar aviso y parar limpio
+            if isinstance(analysis, dict) and "message" in analysis and "suggestion" in analysis and "causes" not in analysis:
+                st.warning(analysis["message"])
+                st.info(analysis["suggestion"])
+                st.stop()
+            
             status_text.text("💬 Generando recomendaciones con LLM...")
             progress_bar.progress(80)
             
