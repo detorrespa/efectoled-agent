@@ -225,34 +225,43 @@ if caso_uso == "🔍 Análisis Causal":
         # Métricas principales
         st.markdown("### 📊 Variación Detectada")
         col1, col2, col3, col4 = st.columns(4)
-        
+
+        def pick(d, *keys, default=None):
+            for k in keys:
+                if k in d and d[k] is not None:
+                    return d[k]
+            return default
+
+        current_value = pick(analysis, "current_value", "current")
+        baseline_value = pick(analysis, "baseline_value", "baseline")
+        variation_pct = pick(analysis, "variation_percentage", "variation_pct")
+        variation_abs = pick(analysis, "variation_absolute", "variation_abs")
+        confidence = pick(analysis, "confidence_score", "confidence", default=0)
+
+        # Si falta algo crítico, muestra el dict para depurar y corta
+        missing = [k for k, v in {
+            "current_value": current_value,
+            "baseline_value": baseline_value,
+            "variation_percentage": variation_pct,
+            "variation_absolute": variation_abs,
+        }.items() if v is None]
+
+        if missing:
+            st.error(f"Faltan claves en 'analysis': {missing}")
+            st.json(analysis)
+            st.stop()
+
+        suffix = "%" if metric == "Conversión" else "€"
+        delta_text = f"{variation_abs:.2f}pp" if metric == "Conversión" else f"{variation_abs:,.0f}€"
+
         with col1:
-            st.metric(
-                "Valor Actual",
-                f"{analysis['current_value']:.1f}{'%' if metric == 'Conversión' else '€'}",
-                delta=None
-            )
+            st.metric("Valor Actual", f"{current_value:.1f}{suffix}", delta=None)
         with col2:
-            st.metric(
-                "Valor Anterior",
-                f"{analysis['baseline_value']:.1f}{'%' if metric == 'Conversión' else '€'}",
-                delta=None
-            )
+            st.metric("Valor Anterior", f"{baseline_value:.1f}{suffix}", delta=None)
         with col3:
-            st.metric(
-                "Variación",
-                f"{analysis['variation_percentage']:.1f}%",
-                delta=f"{analysis['variation_absolute']:.2f}pp" if metric == "Conversión" else f"{analysis['variation_absolute']:,.0f}€",
-                delta_color="inverse"
-            )
+            st.metric("Variación", f"{variation_pct:.1f}%", delta=delta_text, delta_color="inverse")
         with col4:
-            st.metric(
-                "Confianza Modelo",
-                f"{analysis['confidence_score']*100:.0f}%",
-                delta=None
-            )
-        
-        # Gráfico de causas
+            st.metric("Confianza Modelo", f"{confidence*100:.0f}%", delta=None)
         if 'causes' in analysis and len(analysis['causes']) > 0:
             st.markdown("### 🎯 Causas Identificadas")
             
